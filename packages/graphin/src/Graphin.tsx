@@ -19,7 +19,6 @@ import LayoutController from './layout';
 /** 内置API */
 import ApiController from './apis';
 import { ApisType } from './apis/types';
-import { parseAttr } from './shape/graphin-circle';
 
 /** types  */
 import { GraphinProps, IconLoader, GraphinData, GraphinTreeData } from './typings/type';
