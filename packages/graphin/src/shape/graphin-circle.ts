@@ -77,7 +77,7 @@ const parseHalo = (style: NodeStyle) => {
   };
 };
 
-const parseKeyshape = (style: NodeStyle) => {
+export const parseKeyshape = (style: NodeStyle) => {
   const { keyshape } = style;
   const { size, visible, stroke, fill, fillOpacity, strokeOpacity, ...otherAttrs } = keyshape;
 
