@@ -1,6 +1,6 @@
 {
   "name": "@cylynx/graphin",
-  "version": "2.0.19",
+  "version": "2.0.20",
   "description": "the react toolkit for graph analysis based on g6",
   "main": "lib/index.js",
   "module": "es/index.js",

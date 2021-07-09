@@ -353,8 +353,7 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     if (isDataChange) {
       this.initData(data);
 
-      /// Remove by Yinghua to prevent layout changes on new data change.
-      // this.layout.changeLayout();
+      this.layout.changeLayout();
 
       const { defaultEdge } = this.props;
 
@@ -363,7 +362,6 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
 
       this.initStatus();
       this.apis = ApiController(this.graph);
-      // console.log('%c isDataChange', 'color:grey');
 
       if (defaultEdge) {
         const defaultKeyShape = defaultEdge.style?.keyshape;
