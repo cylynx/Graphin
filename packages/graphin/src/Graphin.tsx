@@ -352,9 +352,11 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     /** 数据变化 */
     if (isDataChange) {
       this.initData(data);
-      this.layout.changeLayout();
 
-      const { defaultNode, defaultEdge } = this.props;
+      /// Remove by Yinghua to prevent layout changes on new data change.
+      // this.layout.changeLayout();
+
+      const { defaultEdge } = this.props;
 
       this.graph.data(this.data as GraphData | TreeGraphData);
       this.graph.changeData(this.data as GraphData | TreeGraphData);
