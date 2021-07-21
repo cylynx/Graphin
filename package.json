@@ -2,6 +2,7 @@
   "name": "graphin",
   "scripts": {
     "graphin": "cd packages/graphin && npm run start ",
+    "graphin:dev": "cd packages/graphin && npm run dev",
     "components": "cd packages/graphin-components && npm run start",
     "icons": "cd packages/graphin-icons && npm run start",
     "site": "cd ./packages/graphin-site && npm run start",

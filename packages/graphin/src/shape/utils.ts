@@ -12,6 +12,9 @@ export const setStatusStyle = (shapes: any, statusStyle: any, parseAttr: (style:
   if (!statusStyle) {
     return;
   }
+
+  if (!shapes) return;
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     shapes.forEach((shapeItem: any) => {

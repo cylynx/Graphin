@@ -1,6 +1,6 @@
 import React, { ErrorInfo } from 'react';
 // todo ,G6@unpack版本将规范类型的输出
-import G6, { Graph as IGraph, GraphOptions, GraphData, TreeGraphData } from '@antv/g6';
+import G6, { Graph as IGraph, GraphOptions, GraphData, TreeGraphData, IEdge, EdgeConfig } from '@antv/g6';
 import { deepMix } from '@antv/util';
 /** utils */
 // import shallowEqual from './utils/shallowEqual';
@@ -269,6 +269,7 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     this.initStatus();
     /** 生成API */
     this.apis = ApiController(this.graph);
+
     /** 设置Context */
     this.setState({
       isReady: true,
@@ -353,13 +354,31 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
       this.initData(data);
       this.layout.changeLayout();
 
+      const { defaultNode, defaultEdge } = this.props;
+
       this.graph.data(this.data as GraphData | TreeGraphData);
       this.graph.changeData(this.data as GraphData | TreeGraphData);
 
-      this.graph.render();
       this.initStatus();
       this.apis = ApiController(this.graph);
       // console.log('%c isDataChange', 'color:grey');
+
+      if (defaultEdge) {
+        const defaultKeyShape = defaultEdge.style?.keyshape;
+
+        this.graph.getEdges().forEach(edge => {
+          const edgeID = edge.getID();
+          const edgeKeyshape = (edge.getModel() as any).style.keyshape;
+          const mergedEdgeStyle = { ...defaultKeyShape, ...edgeKeyshape };
+
+          this.graph.updateItem(edgeID, {
+            style: {
+              keyshape: mergedEdgeStyle,
+            } as any,
+          });
+        });
+      }
+
       this.setState(
         preState => {
           return {
@@ -376,6 +395,7 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
           this.graph.emit('graphin:datachange');
         },
       );
+
       return;
     }
     /** 布局变化 */
@@ -457,25 +477,23 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
           <div className="graphin-components">
             {isReady && (
               <>
-                {
-                  /** modes 不存在的时候，才启动默认的behaviors，否则会覆盖用户自己传入的 */
-                  !modes && (
-                    <>
-                      {/* 拖拽画布 */}
-                      <DragCanvas />
-                      {/* 缩放画布 */}
-                      <ZoomCanvas />
-                      {/* 拖拽节点 */}
-                      <DragNode />
-                      {/* 点击节点 */}
-                      <DragCombo />
-                      {/* 点击节点 */}
-                      <ClickSelect />
-                      {/* 圈选节点 */}
-                      <BrushSelect />
-                    </>
-                  )
-                }
+                {/** modes 不存在的时候，才启动默认的behaviors，否则会覆盖用户自己传入的 */
+                !modes && (
+                  <>
+                    {/* 拖拽画布 */}
+                    <DragCanvas />
+                    {/* 缩放画布 */}
+                    <ZoomCanvas />
+                    {/* 拖拽节点 */}
+                    <DragNode />
+                    {/* 点击节点 */}
+                    <DragCombo />
+                    {/* 点击节点 */}
+                    <ClickSelect />
+                    {/* 圈选节点 */}
+                    <BrushSelect />
+                  </>
+                )}
 
                 {/** resize 画布 */}
                 <ResizeCanvas graphDOM={this.graphDOM as HTMLDivElement} />
