@@ -4,6 +4,8 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [reactRefresh()],
   optimizeDeps: {
-    keepNames: true,
+    esbuildOptions: {
+      keepNames: true,
+    },
   },
 });
