@@ -1,11 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import G6, { INode } from '@antv/g6';
 import { IGroup } from '@antv/g-base';
-
+import G6, { INode } from '@antv/g6';
 import { deepMix, isArray, isNumber } from '@antv/util';
-
+import { getDefaultStyleByTheme } from '../theme';
 import { IUserNode, NodeStyle } from '../typings/type';
-import { setStatusStyle, removeDumpAttrs, convertSizeToWH, getLabelXYByPosition, getBadgePosition } from './utils';
+import { convertSizeToWH, getBadgePosition, getLabelXYByPosition, removeDumpAttrs, setStatusStyle } from './utils';
 
 function getRadiusBySize(size: number | number[] | undefined) {
   let r;
@@ -17,22 +16,13 @@ function getRadiusBySize(size: number | number[] | undefined) {
   return r;
 }
 
-const getStyles = (defaultStyleCfg: any, cfgStyle: any) => {
-  // const { halo, keyshape } = { ...defaultStyleCfg, ...cfgStyle } as any;
-  // const nodeSize = convertSizeToWH(keyshape.size);
-  // /*  halo 默认样式单独处理* */
-  // const haloStyle = {
-  //   halo: {
-  //     x: 0,
-  //     y: 0,
-  //     r: nodeSize[0] / 2 + 17, // 默认 halo的样式和keyshape相关
-  //     fill: keyshape.fill,
-  //     visible: false,
-  //     ...halo,
-  //   },
-  // };
-
-  return deepMix({}, defaultStyleCfg, cfgStyle) as NodeStyle;
+const getStyleByTheme = (theme = {}) => {
+  const themeResult = getDefaultStyleByTheme(theme);
+  const { defaultNodeStyle, defaultNodeStatusStyle } = themeResult;
+  return {
+    style: defaultNodeStyle.style,
+    status: defaultNodeStatusStyle.status,
+  };
 };
 
 /**
@@ -141,7 +131,8 @@ const parseIcon = (style: NodeStyle) => {
     fill,
     size,
     visible,
-
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    clip, // clip字段是保留的，放入attrs中会引起报错
     ...otherAttrs
   } = icon;
 
@@ -305,7 +296,12 @@ export default () => {
       status: {},
     },
     draw(cfg: IUserNode, group: IGroup) {
-      const style = getStyles({}, cfg.style) as NodeStyle;
+      // @ts-ignore
+      const { _theme } = cfg.style;
+
+      this.options = getStyleByTheme(_theme);
+
+      const style = deepMix({}, this.options.style, cfg.style) as NodeStyle; // getStyles({}, this.options.style, cfg.style) as NodeStyle;
       /** 将初始化样式存储在model中 */
       cfg._initialStyle = { ...style };
       const { icon, badges = [], keyshape: keyShapeStyle } = style;
@@ -329,7 +325,21 @@ export default () => {
         group.addShape('text', parseIcon(style));
       }
       if (type === 'image') {
-        group.addShape('image', parseIcon(style));
+        const imageAttrs = parseIcon(style);
+        const imageShape = group.addShape('image', imageAttrs);
+        const { clip } = style.icon;
+        if (clip) {
+          const { r, ...clipStyle } = clip;
+          imageShape.setClip({
+            type: 'circle',
+            attrs: {
+              x: 0,
+              y: 0,
+              r,
+              ...clipStyle,
+            },
+          });
+        }
       }
 
       // badges 会存在多个的情况
@@ -343,7 +353,8 @@ export default () => {
       if (!name) return;
       const model = item.getModel() as any;
       const shapes = item.getContainer().get('children'); // 顺序根据 draw 时确定
-      const initStateStyle = deepMix({}, model.style.status);
+
+      const initStateStyle = deepMix({}, this.options.status, model.style.status);
       const initialStyle = item.getModel()._initialStyle as any;
       const status = item._cfg?.states || [];
 
@@ -369,7 +380,7 @@ export default () => {
     update(cfg: IUserNode, item: INode) {
       if (!cfg.style) return;
       try {
-        const style = getStyles(cfg._initialStyle, cfg.style) as NodeStyle;
+        const style = deepMix({}, cfg._initialStyle, cfg.style) as NodeStyle; // getStyles(cfg._initialStyle, cfg.style) as NodeStyle;
         cfg._initialStyle = { ...style };
         const { badges, keyshape } = style;
         const r = getRadiusBySize(keyshape.size) as number;

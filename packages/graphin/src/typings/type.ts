@@ -143,7 +143,7 @@ export interface GraphinProps {
   /**
    * 是否启用全局动画
    */
-  animate?: false;
+  animate?: boolean;
   /* 动画设置,仅在 animate 为 true 时有效 */
   animateCfg?: {
     /**
@@ -378,6 +378,11 @@ export type NodeStyleIcon = Partial<
     size: number | number[];
     /** 图标填充颜色 / 文本填充色 / 图片此属性无效 */
     fill: string;
+    /** 裁剪图片 */
+    clip: {
+      r?: number;
+      [key: string]: any;
+    };
     fontFamily: string;
     /**
      * @description 是否显示和隐藏

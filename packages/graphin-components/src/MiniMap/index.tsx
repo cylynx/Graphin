@@ -1,12 +1,11 @@
+import { G6, GraphinContext } from '@antv/graphin';
 import React from 'react';
-
-import { GraphinContext, G6 } from '@antv/graphin';
 
 const defaultOptions = {
   className: 'graphin-minimap',
   viewportClassName: 'graphin-minimap-viewport',
   // Minimap 中默认展示和主图一样的内容，KeyShape 只展示节点和边的 key shape 部分，delegate表示展示自定义的rect，用户可自定义样式
-  type: 'default',
+  type: 'default' as 'default' | 'keyShape' | 'delegate' | undefined,
   padding: 50,
   size: [200, 120],
   delegateStyle: {
@@ -66,7 +65,9 @@ const MiniMap: React.FunctionComponent<MiniMapProps> = props => {
     graph.addPlugin(miniMap);
 
     return () => {
-      graph.removePlugin(miniMap);
+      if (miniMap && !miniMap.destroyed) {
+        graph.removePlugin(miniMap);
+      }
     };
   }, [options]);
 

@@ -1,30 +1,24 @@
-import React, { ErrorInfo } from 'react';
 // todo ,G6@unpack版本将规范类型的输出
-import G6, { Graph as IGraph, GraphOptions, GraphData, TreeGraphData, IEdge, EdgeConfig } from '@antv/g6';
-import { deepMix } from '@antv/util';
-/** utils */
-// import shallowEqual from './utils/shallowEqual';
-import deepEqual from './utils/deepEqual';
-
+import G6, { Graph as IGraph, GraphData, GraphOptions, TreeGraphData } from '@antv/g6';
 import cloneDeep from 'lodash-es/cloneDeep';
-
-import './index.less';
-
-/** Context */
-import GraphinContext from './GraphinContext';
-/** 内置 Behaviors */
-import Behaviors from './behaviors';
-/** 内置布局 */
-import LayoutController from './layout';
+import React, { ErrorInfo } from 'react';
 /** 内置API */
 import ApiController from './apis';
 import { ApisType } from './apis/types';
-
-/** types  */
-import { GraphinProps, IconLoader, GraphinData, GraphinTreeData } from './typings/type';
-import { TREE_LAYOUTS, DEFAULT_TREE_LATOUT_OPTIONS } from './consts';
-
+/** 内置 Behaviors */
+import Behaviors from './behaviors';
+import { DEFAULT_TREE_LATOUT_OPTIONS, TREE_LAYOUTS } from './consts';
+/** Context */
+import GraphinContext from './GraphinContext';
+import './index.less';
+/** 内置布局 */
+import LayoutController from './layout';
 import { getDefaultStyleByTheme, ThemeData } from './theme/index';
+/** types  */
+import { GraphinData, GraphinProps, GraphinTreeData, IconLoader } from './typings/type';
+/** utils */
+// import shallowEqual from './utils/shallowEqual';
+import deepEqual from './utils/deepEqual';
 
 const { DragCanvas, ZoomCanvas, DragNode, DragCombo, ClickSelect, BrushSelect, ResizeCanvas, Hoverable } = Behaviors;
 
@@ -104,6 +98,8 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
   /** layout */
   layout: LayoutController;
 
+  layoutCache: boolean;
+
   width: number;
 
   height: number;
@@ -123,15 +119,7 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
   constructor(props: GraphinProps) {
     super(props);
 
-    const {
-      data,
-      layout,
-      width,
-      height,
-
-      ...otherOptions
-    } = props;
-
+    const { data, layout, width, height, layoutCache, ...otherOptions } = props;
     this.data = data;
     this.isTree =
       Boolean(props.data && (props.data as GraphinTreeData).children) ||
@@ -142,7 +130,9 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
 
     this.theme = {} as ThemeData;
     this.apis = {} as ApisType;
+    this.layoutCache = layoutCache;
     this.layout = {} as LayoutController;
+
     this.options = { ...otherOptions } as GraphOptions;
 
     this.state = {
@@ -170,9 +160,9 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
       layout,
       width,
       height,
-      defaultCombo,
-      defaultEdge,
-      defaultNode,
+      defaultCombo = { style: {}, type: 'graphin-combo' },
+      defaultEdge = { style: {}, type: 'graphin-line' },
+      defaultNode = { style: {}, type: 'graphin-circle' },
       nodeStateStyles,
       edgeStateStyles,
       comboStateStyles,
@@ -209,17 +199,15 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     /** graph type */
     this.isTree =
       Boolean((data as GraphinTreeData).children) || TREE_LAYOUTS.indexOf(String(layout && layout.type)) !== -1;
-    const isGraphinNodeType = defaultNode?.type === undefined || defaultNode?.type === defaultNodeStyle.type;
-    const isGraphinEdgeType = defaultEdge?.type === undefined || defaultEdge?.type === defaultEdgeStyle.type;
 
     const finalStyle = {
-      defaultNode: isGraphinNodeType ? deepMix({}, defaultNodeStyle, defaultNode) : defaultNode,
-      defaultEdge: isGraphinEdgeType ? deepMix({}, defaultEdgeStyle, defaultEdge) : defaultEdge,
-      defaultCombo: deepMix({}, defaultComboStyle, defaultCombo), // TODO:COMBO的样式需要内部自定义
+      defaultNode: { style: { ...defaultNode.style, _theme: theme }, type: defaultNode.type || 'graphin-circle' }, // isGraphinNodeType ? deepMix({}, defaultNodeStyle, defaultNode) : defaultNode,
+      defaultEdge: { style: { ...defaultEdge.style, _theme: theme }, type: defaultEdge.type || 'graphin-line' }, // isGraphinEdgeType ? deepMix({}, defaultEdgeStyle, defaultEdge) : defaultEdge,
+      defaultCombo: { style: { ...defaultCombo.style, _theme: theme }, type: defaultCombo.type || 'combo' }, // deepMix({}, defaultComboStyle, defaultCombo), // TODO:COMBO的样式需要内部自定义
       /** status 样式 */
-      nodeStateStyles: isGraphinNodeType ? deepMix({}, defaultNodeStatusStyle, nodeStateStyles) : nodeStateStyles,
-      edgeStateStyles: isGraphinEdgeType ? deepMix({}, defaultEdgeStatusStyle, edgeStateStyles) : edgeStateStyles,
-      comboStateStyles: deepMix({}, defaultComboStatusStyle, comboStateStyles),
+      nodeStateStyles, // isGraphinNodeType ? deepMix({}, defaultNodeStatusStyle, nodeStateStyles) : nodeStateStyles,
+      edgeStateStyles, // isGraphinEdgeType ? deepMix({}, defaultEdgeStatusStyle, edgeStateStyles) : edgeStateStyles,
+      comboStateStyles, // deepMix({}, defaultComboStatusStyle, comboStateStyles),
     };
     // @ts-ignore
     this.theme = { ...finalStyle, ...otherTheme } as ThemeData;
@@ -231,7 +219,6 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
       height: this.height,
       animate: animate !== false,
       ...finalStyle,
-
       modes,
       ...otherOptions,
     } as GraphOptions;
@@ -252,7 +239,6 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
 
     /** 装载数据 */
     this.graph.data(this.data as GraphData | TreeGraphData);
-
     /** 初始化布局：仅限网图 */
     if (!this.isTree) {
       this.layout = new LayoutController(this);
@@ -330,7 +316,8 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
     const isOptionsChange = this.shouldUpdate(prevProps, 'options');
     const isThemeChange = this.shouldUpdate(prevProps, 'theme');
     // console.timeEnd('did-update');
-    const { data } = this.props;
+    const { data, layoutCache, layout } = this.props;
+    this.layoutCache = layoutCache;
     const isGraphTypeChange = (prevProps.data as GraphinTreeData).children !== (data as GraphinTreeData).children;
 
     if (isThemeChange) {
@@ -393,6 +380,9 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
         },
         () => {
           this.graph.emit('graphin:datachange');
+          if (isLayoutChange) {
+            this.graph.emit('graphin:layoutchange', { prevLayout: prevProps.layout, layout });
+          }
         },
       );
 
@@ -421,7 +411,7 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
       /** 走G6的layoutController */
       // this.graph.updateLayout();
       // console.log('%c isLayoutChange', 'color:grey');
-      this.graph.emit('graphin:layoutchange');
+      this.graph.emit('graphin:layoutchange', { prevLayout: prevProps.layout, layout });
     }
   }
 
@@ -494,12 +484,11 @@ class Graphin extends React.PureComponent<GraphinProps, GraphinState> {
                     <BrushSelect />
                   </>
                 )}
-
                 {/** resize 画布 */}
                 <ResizeCanvas graphDOM={this.graphDOM as HTMLDivElement} />
-                <Hoverable bindType="node" />
                 {/* <Hoverable bindType="edge" /> */}
                 {this.props.children}
+                {/* <Hoverable bindType="node" /> 2.3.3 版本移除 */}
               </>
             )}
           </div>
